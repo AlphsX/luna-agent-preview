@@ -66,7 +66,12 @@ def main():
     if input_variable:
         try:
             llm=ChatGroq(groq_api_key=groq_api_key, 
-                          model=model) # Sidebar LLMs
+                          model=model, 
+                          temperature=0.5, 
+                          max_completion_tokens=1024, 
+                          top_p=1, 
+                          stop=None, 
+                          stream=False) # LLMs
 
             # Prompt template
             prompt=ChatPromptTemplate.from_messages([
@@ -101,13 +106,13 @@ def main():
 
             # Invoke
             response=conversation.invoke(
-                {'input': input_variable},
+                {'input': input_variable}, # Question
                 config={'configurable': {'session_id': 'luna_session'}}
             )
 
             # Save chat history
             message={'human': input_variable, 
-                     'ai': response.content}
+                     'ai': response.content} # Answer
             st.session_state.chat_history.append(message)
             st.session_state.message_store.add_user_message(input_variable)
             st.session_state.message_store.add_ai_message(response.content)
