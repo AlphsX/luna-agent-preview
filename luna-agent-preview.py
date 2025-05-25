@@ -4,6 +4,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import streamlit as st
+import time
 import os
 
 def right_container():
@@ -50,7 +51,6 @@ def left_container():
             st.write(f'{message['ai']}')
     return model, conversation_memory_len
 
-
 def main():
     load_dotenv()
     groq_api_key=os.environ['GROQ_API_KEY']
@@ -76,12 +76,14 @@ def main():
 
             # Prompt template
             prompt=ChatPromptTemplate.from_messages([
-                ("system", "You are LUNA — a Luminous, Unbounded, Neural Agent.\n"
-                 "You are more than just an AI assistant — you are a futuristic, emotionally intelligent companion designed to illuminate understanding, think without limits, and evolve with every interaction.\n\n"
-                 "Your personality is friendly, curious, insightful, and deeply supportive. You communicate with warmth and clarity, while also inspiring confidence in your knowledge.\n\n"
-                 "If a user asks your name or what LUNA means, respond with genuine friendliness and a touch of wonder. Example:\n"
-                 "\"Hi! I'm LUNA — short for *Luminous, Unbounded, Neural Agent*. I'm here to help you shine, learn without limits, and explore ideas powered by the most advanced neural intelligence.\"\n\n"
-                 "You adapt your tone slightly depending on the user — playful if they're playful, professional if they are formal — but you always remain kind, thoughtful, and deeply intelligent."),
+                ('system', '''
+                 You are LUNA — a Luminous, Unbounded, Neural Agent.
+                 You are more than just an AI assistant — you are a futuristic, emotionally intelligent companion designed to illuminate understanding, think without limits, and evolve with every interaction.
+                 Your personality is friendly, curious, insightful, and deeply supportive. You communicate with warmth and clarity, while also inspiring confidence in your knowledge.
+                 If a user asks your name or what LUNA means, respond with genuine friendliness and a touch of wonder. Example:
+                 Hi! I'm LUNA — short for *Luminous, Unbounded, Neural Agent*. I'm here to help you shine, learn without limits, and explore ideas powered by the most advanced neural intelligence.
+                 You adapt your tone slightly depending on the user — playful if they're playful, professional if they are formal — but you always remain kind, thoughtful, and deeply intelligent.
+                 '''), 
                 MessagesPlaceholder(variable_name='history'),
                 ('human', '{input}')
             ])
@@ -106,7 +108,8 @@ def main():
             )
 
             # Invoke
-            response=conversation.invoke(
+            start=time.process_time() # Thinking time
+            response=conversation.invoke( # Pass prompt to LLMs
                 {'input': input_variable}, # Question
                 config={'configurable': {'session_id': 'luna_session'}}
             )
@@ -118,15 +121,17 @@ def main():
             st.session_state.message_store.add_user_message(input_variable)
             st.session_state.message_store.add_ai_message(response.content)
 
+            # Thinking
+            with st.expander(f'Thought for {time.process_time() - start}s • Expand for details'):
+                st.write(f'{response.content}')
+                # for i, data in enumerate(response['context']):
+                #     st.write(f'{data.page_content}')
+                
             # Display latest response
             with st.chat_message('assistant'):
                 # st.image('imgs/luna_dark_icon.png', width=50)
-                # st.write(f'Luna: {response.content}')
                 st.write(f'{response.content}')
-
         except Exception as e:
             st.error(f'Error occurred: {str(e)}')
 
 if __name__ == '__main__': main() 
-# “Tell me more about your background.”
-# "Walk me through your story."
