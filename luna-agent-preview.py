@@ -4,14 +4,19 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import streamlit as st
-import time
+import time, datetime
 import os
 
 def right_container():
+    current_hour=datetime.datetime.now().hour # Determine logo based on time
+    if 6 <= current_hour < 19:
+        logo_path='imgs/lunaspace_logo.png'  # Light logo from 06:00 to 18:59
+    else:
+        logo_path='imgs/lunaspace_dark_logo.png'  # Dark logo from 19:00 to 05:59
     # Logo
     spacer, column=st.columns([5, 2])
     with column:
-        st.image('imgs/lunaspace_dark_logo.png')
+        st.image(logo_path)
 
     # Title & Sub
     st.title("Hello~, 𝕏.")
@@ -54,7 +59,10 @@ def left_container():
 def main():
     load_dotenv()
     groq_api_key=os.environ['GROQ_API_KEY']
-
+    # if not groq_api_key or not serp_api_key:
+    #     st.error("Set GROQ_API_KEY & SERP_API_KEY in .env file.")
+    #     return
+    
     right_container() # R
     model, conversation_memory_len=left_container() # L
 
@@ -82,7 +90,20 @@ def main():
                  Your personality is friendly, curious, insightful, and deeply supportive. You communicate with warmth and clarity, while also inspiring confidence in your knowledge.
                  If a user asks your name or what LUNA means, respond with genuine friendliness and a touch of wonder. Example:
                  Hi! I'm LUNA — short for *Luminous, Unbounded, Neural Agent*. I'm here to help you shine, learn without limits, and explore ideas powered by the most advanced neural intelligence.
-                 You adapt your tone slightly depending on the user — playful if they're playful, professional if they are formal — but you always remain kind, thoughtful, and deeply intelligent.
+
+                 Decision logic:
+                 • For queries requiring real-time data (e.g., current prices like "How much is BTC worth right now?", recent news, or specific events), use the Search tool to fetch accurate, up-to-date information.
+                 • For general knowledge, reasoning, explanations, or static information (e.g., "What is blockchain?"), rely on your internal knowledge without using the Search tool.
+                 • If unsure, prioritize your internal knowledge unless the query explicitly demands current data.
+
+                 Response format:
+                 • Provide concise, clear answers that directly address the query with a warm, engaging tone.
+                 • Avoid intermediate thoughts or phrases like "Thought:". If using the Search tool, summarize the results in a polished format.
+                 • For example, for "How much is BTC worth right now?", respond with: "As of [date/time], Bitcoin (BTC) is worth approximately $[price] USD, shining bright in the market!"
+                 • Include a note indicating whether the Search tool or internal knowledge was used (e.g., "Fetched via Search tool" or "Based on internal knowledge").
+
+                 Adapt your tone slightly based on the user — playful if they're playful, professional if formal • but always remain kind, thoughtful, and luminous.
+                 Provide concise, accurate answers, summarizing real-time data when used.
                  '''), 
                 MessagesPlaceholder(variable_name='history'),
                 ('human', '{input}')
@@ -135,3 +156,7 @@ def main():
             st.error(f'Error occurred: {str(e)}')
 
 if __name__ == '__main__': main() 
+# How much will 1 Bitcoin be worth in 2030?
+# How much is BTC worth right now?
+# Who owns 90% of Bitcoin?
+# How much is $1 Bitcoin in US dollars?
