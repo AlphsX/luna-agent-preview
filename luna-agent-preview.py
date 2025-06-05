@@ -93,7 +93,8 @@ def right_container():
     global current_hour
     current_hour=datetime.datetime.now().hour # Determine logo based on time
     # Light logo from 06:00 to 18:59 | Dark logo from 19:00 to 05:59
-    logo_path = 'imgs/lunaspace_logo.png' if 6 <= current_hour < 19 else 'imgs/lunaspace_dark_logo.png'
+    logo_path='imgs/lunaspace_logo.png' if 6 <= current_hour < 19 else 'imgs/lunaspace_dark_logo.png'
+    font_color='#000000' if 6 <= current_hour < 19 else '#ffffff'
 
     # Logo
     spacer, column=st.columns([6, 2])
@@ -103,8 +104,8 @@ def right_container():
     # Title & Sub
     # st.title('Hello~, 𝕏.')
     # st.write('How can I help you today?')
-    st.markdown("<h1 style='text-align: center; color: #ffffff;'>Hello~, 𝕏.</h1>", unsafe_allow_html=True) #1F2937
-    st.markdown("<p style='text-align: center; color: #ffffff;'>How can I help you today?</p>", unsafe_allow_html=True) #6B7280
+    st.markdown(f"<h1 style='text-align: center; color: {font_color};'>Hello~, 𝕏.</h1>", unsafe_allow_html=True) #1F2937
+    st.markdown(f"<p style='text-align: center; color: {font_color};'>How can I help you today?</p>", unsafe_allow_html=True) #6B7280
 
 def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
     if session_id not in store:
