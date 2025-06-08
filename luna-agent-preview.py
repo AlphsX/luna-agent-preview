@@ -137,7 +137,7 @@ def left_container():
 
     # Display chat history
     for message in st.session_state.chat_history:
-        with st.chat_message('human', avatar='imgs/user_profile.jpg'):
+        with st.chat_message('human', avatar='imgs/user_profile.png'):
             st.write(message['human'])
             # st.markdown(f"<p class='chat-timestamp'>{message['timestamp']}</p>", unsafe_allow_html=True)
         with st.chat_message('assistant', avatar='imgs/lunaspace_dark_mini_logo.png'):
@@ -163,7 +163,7 @@ def main():
                     max_completion_tokens=1024, 
                     top_p=1, 
                     stop=None, 
-                    stream=False)
+                    stream=True)
     
     # SerpAPI tool
     search=SerpAPIWrapper()
@@ -303,7 +303,7 @@ def main():
                     #     st.write(f'{data.page['output']}')
 
                 # Display latest response
-                logo_path = 'imgs/lunaspace_mini_logo.png' if 6 <= current_hour < 19 else 'imgs/lunaspace_dark_mini_logo.png'
+                logo_path = 'imgs/lunaspace_dark_mini_logo.png' if 6 <= current_hour < 19 else 'imgs/lunaspace_mini_logo.png'
                 with st.chat_message('assistant', avatar=logo_path):
                     st.write(f'{response['output']}') # st.image('imgs/lunaspace_dark_mini_logo.png', width=50)
                     # st.markdown(f"<p class='chat-timestamp'>{timestamp}</p>", unsafe_allow_html=True) # Display timestamp
