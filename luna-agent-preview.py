@@ -136,8 +136,9 @@ def left_container():
         st.session_state.text_input=''
 
     # Display chat history
+    profile_path='imgs/user_profile.png' if 6 <= current_hour < 19 else 'imgs/user_dark_profile.png'
     for message in st.session_state.chat_history:
-        with st.chat_message('human', avatar='imgs/user_profile.png'):
+        with st.chat_message('human', avatar=profile_path): # //
             st.write(message['human'])
             # st.markdown(f"<p class='chat-timestamp'>{message['timestamp']}</p>", unsafe_allow_html=True)
         with st.chat_message('assistant', avatar='imgs/lunaspace_dark_mini_logo.png'):
@@ -163,7 +164,7 @@ def main():
                     max_completion_tokens=1024, 
                     top_p=1, 
                     stop=None, 
-                    stream=True)
+                    stream=False) # True
     
     # SerpAPI tool
     search=SerpAPIWrapper()
@@ -275,7 +276,7 @@ def main():
     #         with col2: submit_button = st.form_submit_button("➤")
 
     if input_variable and input_variable:
-        with st.spinner('Thinking'):
+        with st.spinner('***Thinking...***'):
             start=time.process_time() # Thinking time
             try:
                 # Invoke chain=prompt | llm
@@ -297,7 +298,7 @@ def main():
                     st.session_state.chat_history=st.session_state.chat_history[-conversation_memory_len*2:]
 
                 # Thinking
-                with st.expander(f'Thought for {time.process_time() - start:.5f}s • Expand for details'):
+                with st.expander(f'**Thought for** {time.process_time() - start:.5f}s • Expand for details'):
                     st.write(f'{response['output']}')
                     # for i, data in enumerate(response['context']):
                     #     st.write(f'{data.page['output']}')
