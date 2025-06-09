@@ -92,9 +92,9 @@ st.markdown("""
 def right_container():
     global current_hour
     current_hour=datetime.datetime.now().hour # Determine logo based on time
-    # Light logo from 06:00 to 18:59 | Dark logo from 19:00 to 05:59
-    logo_path='imgs/lunaspace_logo.png' if 6 <= current_hour < 19 else 'imgs/lunaspace_dark_logo.png'
-    font_color='#000000' if 6 <= current_hour < 19 else '#ffffff'
+    # Light logo from 06:00 to 19:59 | Dark logo from 20:00 to 05:59
+    logo_path='imgs/lunaspace_logo.png' if 6 <= current_hour < 20 else 'imgs/lunaspace_dark_logo.png'
+    font_color='#000000' if 6 <= current_hour < 20 else '#ffffff'
 
     # Logo
     spacer, column=st.columns([6, 2])
@@ -136,7 +136,7 @@ def left_container():
         st.session_state.text_input=''
 
     # Display chat history
-    profile_path='imgs/user_profile.png' if 6 <= current_hour < 19 else 'imgs/user_dark_profile.png'
+    profile_path='imgs/user_profile.png' if 6 <= current_hour < 20 else 'imgs/user_dark_profile.png'
     for message in st.session_state.chat_history:
         with st.chat_message('human', avatar=profile_path): # //
             st.write(message['human'])
@@ -299,12 +299,13 @@ def main():
 
                 # Thinking
                 with st.expander(f'**Thought for** {time.process_time() - start:.5f}s • Expand for details'):
-                    st.write(f'{response['output']}')
+                    st.code(response['output'], language='python') # text
+                    # st.write(f'{response['output']}')
                     # for i, data in enumerate(response['context']):
                     #     st.write(f'{data.page['output']}')
 
                 # Display latest response
-                logo_path = 'imgs/lunaspace_dark_mini_logo.png' if 6 <= current_hour < 19 else 'imgs/lunaspace_mini_logo.png'
+                logo_path = 'imgs/lunaspace_dark_mini_logo.png' if 6 <= current_hour < 20 else 'imgs/lunaspace_mini_logo.png'
                 with st.chat_message('assistant', avatar=logo_path):
                     st.write(f'{response['output']}') # st.image('imgs/lunaspace_dark_mini_logo.png', width=50)
                     # st.markdown(f"<p class='chat-timestamp'>{timestamp}</p>", unsafe_allow_html=True) # Display timestamp
@@ -312,5 +313,4 @@ def main():
                 st.error(f'Error occurred: {str(e)}')
     
 store={} # In-memory store for chat histories
-if __name__=='__main__': 
-    main() 
+if __name__=='__main__': main() 
