@@ -64,7 +64,7 @@ st.markdown("""
 
         /* hover */
         button[kind="secondary"]:hover {
-            border-color: #38dffb !important; 
+            border-color: #fc0d2a !important; 
         }
 
         /* sidebar */
@@ -80,9 +80,9 @@ st.markdown("""
         }
 
         .stButton > button:hover {
-            border-color: #38dffb !important;
-            color: #38dffb;
-            background-color: ##262730;
+            border-color: #fc0d2a !important;
+            color: #fc0d2a; #38dffb
+            background-color: #262730;
             cursor: pointer;
         }
     </style>
@@ -123,7 +123,7 @@ def left_container():
                                                1, 15, value=5)
     
     # Clear chat history
-    if st.sidebar.button('Delete Chat History'):
+    if st.sidebar.button('𝕏', help='Delete Chat History'):
         st.session_state.chat_history=[]
         store.clear()  # Clear in-memory chat history
         st.session_state.text_input=''
@@ -150,6 +150,8 @@ def main():
     load_dotenv()
     groq_api_key=os.getenv('GROQ_API_KEY') # Fixed API KEY
     serp_api_key=os.getenv('SERP_API_KEY') # //
+    binance_api_key=os.getenv('')
+    binance_secret_key=os.getenv('')
     if not groq_api_key or not serp_api_key:
         st.error('Set GROQ_API_KEY & SERP_API_KEY in .env file.')
         return

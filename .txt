@@ -6,3 +6,4 @@ python-dotenv
 streamlit
 google-search-results
 serpapi
+python-binance
