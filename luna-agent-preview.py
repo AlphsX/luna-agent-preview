@@ -116,8 +116,8 @@ def left_container():
     # Sidebar LLMs
     st.sidebar.title('Customize')
     model=st.sidebar.selectbox('Choose your model', 
-                                ['llama3-70b-8192', 
-                                 'llama-3.3-70b-versatile', 
+                                ['openai/gpt-oss-120b', 
+                                 'moonshotai/kimi-k2-instruct', 
                                  'deepseek-r1-distill-llama-70b'])
     conversation_memory_len=st.sidebar.slider('Conversational memory length: ', 
                                                1, 15, value=5)
