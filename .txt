@@ -7,3 +7,6 @@ streamlit
 google-search-results
 serpapi
 python-binance
+psycopg2-binary
+sentence-transformers
+ollama
