@@ -8,6 +8,7 @@ from langchain_core.tools import Tool
 from dotenv import load_dotenv
 import streamlit as st
 import time, datetime
+import random
 import os # streamlit run luna-agent-preview.py --server.port 8502
 
 st.markdown("""
@@ -92,9 +93,9 @@ st.markdown("""
 def right_container():
     global current_hour
     current_hour=datetime.datetime.now().hour # Determine logo based on time
-    # Light logo from 06:00 to 19:59 | Dark logo from 20:00 to 05:59
-    logo_path='imgs/lunaspace_logo.png' if 6 <= current_hour < 20 else 'imgs/lunaspace_dark_logo.png'
-    font_color='#000000' if 6 <= current_hour < 20 else '#ffffff'
+    # Light logo from 07:00 to 19:59 | Dark logo from 20:00 to 06:59
+    logo_path='imgs/lunaspace_logo.png' if 7 <= current_hour < 20 else 'imgs/lunaspace_dark_logo.png'
+    font_color='#000000' if 7 <= current_hour < 20 else '#ffffff'
 
     # Logo
     spacer, column=st.columns([6, 2])
@@ -104,7 +105,8 @@ def right_container():
     # Title & Sub
     # st.title('Hello~, 𝕏.')
     # st.write('How can I help you today?')
-    st.markdown(f"<h1 style='text-align: center; color: {font_color};'>Hello~, 𝕏.</h1>", unsafe_allow_html=True) #1F2937
+    random_greetings = random.choice(messages[1])  # Random greeting
+    st.markdown(f"<h1 style='text-align: center; color: {font_color};'>{random_greetings}~, 𝕏.</h1>", unsafe_allow_html=True) #1F2937
     st.markdown(f"<p style='text-align: center; color: {font_color};'>How can I help you today?</p>", unsafe_allow_html=True) #6B7280
 
 def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
@@ -136,7 +138,7 @@ def left_container():
         st.session_state.text_input=''
 
     # Display chat history
-    profile_path='imgs/user_profile.png' if 6 <= current_hour < 20 else 'imgs/user_dark_profile.png'
+    profile_path='imgs/user_profile.png' if 7 <= current_hour < 20 else 'imgs/user_dark_profile.png'
     for message in st.session_state.chat_history:
         with st.chat_message('human', avatar=profile_path): # //
             st.write(message['human'])
@@ -267,8 +269,9 @@ def main():
         return
 
 
+    random_message = random.choice(messages[0])  # Randomly select a message prompt
     # Question
-    input_variable = st.chat_input("What do you want to know?")
+    input_variable = st.chat_input(f'{random_message}')
     # with st.container():
     #     with st.form(key="chat_form", clear_on_submit=True):
     #         col1, col2 = st.columns([8, 1])
@@ -307,7 +310,7 @@ def main():
                     #     st.write(f'{data.page['output']}')
 
                 # Display latest response
-                logo_path = 'imgs/lunaspace_dark_mini_logo.png' if 6 <= current_hour < 20 else 'imgs/lunaspace_mini_logo.png'
+                logo_path = 'imgs/lunaspace_dark_mini_logo.png' if 7 <= current_hour < 20 else 'imgs/lunaspace_mini_logo.png'
                 with st.chat_message('assistant', avatar=logo_path):
                     st.write(f'{response['output']}') # st.image('imgs/lunaspace_dark_mini_logo.png', width=50)
                     # st.markdown(f"<p class='chat-timestamp'>{timestamp}</p>", unsafe_allow_html=True) # Display timestamp
@@ -315,4 +318,13 @@ def main():
                 st.error(f'Error occurred: {str(e)}')
     
 store={} # In-memory store for chat histories
+messages=[['What do you want to know?', 
+                'Ask anything...', 
+                'Message Luna', 
+                'Enter a prompt for Luna',
+                'Type any idea you have'], 
+                ['Hello', 'Bonjour', 'Hola', 
+                 'こんにちは', '안녕하세요', '你好', 
+                 'Guten Tag', 'Ciao', 'Olá', 
+                 'Привет', 'مرحبا', 'שלום']] # Random message prompts
 if __name__=='__main__': main() 
