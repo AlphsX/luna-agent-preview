@@ -11,6 +11,8 @@ import time, datetime
 import random
 import os # streamlit run luna-agent-preview.py --server.port 8502
 
+from vector_db import query_postgresql
+
 st.markdown("""
     <style>
         .chat-message {
@@ -165,11 +167,26 @@ def main():
     llm=ChatGroq(groq_api_key=groq_api_key, 
                     model=model, 
                     temperature=0.5, 
-                    max_completion_tokens=1024, 
-                    top_p=1, 
+                    max_tokens=1024, # max_completion_tokens
                     stop=None, 
-                    stream=False) # True
-    
+                    model_kwargs={"stream": False}) # stream=True
+
+    vector_tool=Tool(
+        name="VectorDB",
+        func=vector_search, # func=lambda q: "\n".join(query_postgresql(q, top_k=3))
+        description="""
+        Use this tool when the user asks questions about LunaSpace’s mission, company culture, 
+        engineering roles, required skills, responsibilities, technology stack, job location, 
+        salary range, or employee benefits.  
+
+        This tool searches the internal knowledge base (stored in PostgreSQL with vector embeddings) 
+        and returns the most relevant passages.  
+
+        When responding, summarize the retrieved content naturally in your own words, 
+        instead of copying raw text directly.
+        """
+    )
+
     # SerpAPI tool
     search=SerpAPIWrapper()
     tools=[
@@ -178,7 +195,8 @@ def main():
             func=search.run,
             description='''Use this to fetch real-time data for queries about current events, market 
             prices (e.g., Bitcoin), recent news, or trending topics (e.g., AI agent developments).'''
-        )
+        ), 
+        vector_tool
     ]
 
     # Prompt template
@@ -206,6 +224,19 @@ def main():
         *“How much is Bitcoin worth now?”* → Use the Search tool and respond like:  
         > As of May 29, 2025, 08:30 AM UTC+7, Bitcoin (BTC) is trading at approximately $66,200 USD. 🚀
 
+        Use the **VectorDB Tool** when questions are *specific and knowledge-based*, such as:  
+        • LunaSpace’s mission and company culture  
+        • Job descriptions, responsibilities, and required skills  
+        • Engineering roles and expectations  
+        • Technology stack (Python, Rust, WebSocket, WebRTC, etc.)  
+        • Location of roles  
+        • Salary ranges and employee benefits  
+        
+        **Important when using VectorDB:**  
+        - Read the retrieved passages, then **summarize them naturally**.  
+        - Do **not** copy raw database text directly.  
+        - Combine key points into a clear, human-friendly response. 
+         
         Use **your internal knowledge** for:
         - Concepts, how-things-work explanations, definitions, frameworks, guides
         - General topics not sensitive to time
@@ -248,12 +279,12 @@ def main():
     try:
         agent=create_tool_calling_agent(
             llm=llm, 
-            tools=tools, 
+            tools=tools, # --- IGNORE ---
             prompt=prompt
         )
         agent_executor=AgentExecutor(
             agent=agent,
-            tools=tools,
+            tools=tools, # --- IGNORE ---
             handle_parsing_errors=True, 
             verbose=True
         )
@@ -317,6 +348,16 @@ def main():
             except Exception as e:
                 st.error(f'Error occurred: {str(e)}')
     
+def vector_search(q: str) -> str:
+    # query_postgresql -> [(content, score), ...]
+    results=query_postgresql(q, top_k=3)
+    chunks=[]
+    for row in results:
+        content=row[0] if isinstance(row, (list, tuple)) else row
+        chunks.append(str(content))
+    return "\n\n---\n\n".join(chunks) if chunks else ""
+
+
 store={} # In-memory store for chat histories
 messages=[['What do you want to know?', 
                 'Ask anything...', 
@@ -327,4 +368,5 @@ messages=[['What do you want to know?',
                  'こんにちは', '안녕하세요', '你好', 
                  'Guten Tag', 'Ciao', 'Olá', 
                  'Привет', 'مرحبا', 'שלום']] # Random message prompts
-if __name__=='__main__': main() 
+if __name__=='__main__': 
+    main()
