@@ -1,5 +1,5 @@
-import psycopg2, json
 from sentence_transformers import SentenceTransformer
+import psycopg2, json
 
 def connect_to_db():
         conn = psycopg2.connect(
@@ -48,8 +48,8 @@ def add_docs(docs):
 
 # Querying the database for similar documents
 def query_postgresql(query, top_k=3):
-    query_embedding=json.dumps(model.encode(query).tolist())
     cur=conn.cursor()
+    query_embedding=model.encode(query).tolist() # query_embedding=json.dumps(model.encode(query).tolist())
     cur.execute('''
         select content, embedding <=> %s::vector as similarity_score
         from documents
@@ -58,8 +58,8 @@ def query_postgresql(query, top_k=3):
     ''', (query_embedding, top_k))
     results=cur.fetchall()
     cur.close()
-    conn.close()
-    return results
+    # conn.close()
+    return [r[0] for r in results] # results
 
 # docs=['LunaSpace’s mission is to create AI systems that can accurately understand the universe and aid humanity in its pursuit of knowledge. Our team is small, highly motivated, and focused on engineering excellence. This organization is for individuals who appreciate challenging themselves and thrive on curiosity. We operate with a flat organizational structure. All employees are expected to be hands-on and to contribute directly to the company’s mission. Leadership is given to those who show initiative and consistently deliver excellence. Work ethic and strong prioritization skills are important. All engineers are expected to have strong communication skills. They should be able to concisely and accurately share knowledge with their teammates.',
 #     "About the role We're looking for exceptional multimedia engineers and product thinkers who want to make Grok's realtime avatar products the best in the world.", 
