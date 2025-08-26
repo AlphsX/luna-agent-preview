@@ -9,9 +9,11 @@ from dotenv import load_dotenv
 import streamlit as st
 import time, datetime
 import random
-import os # streamlit run luna-agent-preview.py --server.port 8502
+import os # export PYTHONPATH="$(pwd)"
+# streamlit run src/app/luna-agent-preview.py --server.port 8502
 
-from vector_db import query_postgresql
+
+from src.app.vector_db import query_postgresql # docker ps
 
 st.markdown("""
     <style>
@@ -96,7 +98,7 @@ def right_container():
     global current_hour
     current_hour=datetime.datetime.now().hour # Determine logo based on time
     # Light logo from 07:00 to 19:59 | Dark logo from 20:00 to 06:59
-    logo_path='imgs/lunaspace_logo.png' if 7 <= current_hour < 20 else 'imgs/lunaspace_dark_logo.png'
+    logo_path='public/images/lunaspace_logo.png' if 7 <= current_hour < 20 else 'public/images/lunaspace_dark_logo.png'
     font_color='#000000' if 7 <= current_hour < 20 else '#ffffff'
 
     # Logo
@@ -121,8 +123,10 @@ def left_container():
     st.sidebar.title('Customize')
     model=st.sidebar.selectbox('Choose your model', 
                                 ['openai/gpt-oss-120b', 
-                                 'moonshotai/kimi-k2-instruct', 
-                                 'deepseek-r1-distill-llama-70b'])
+                                 'meta-llama/llama-4-maverick-17b-128e-instruct', 
+                                 'deepseek-r1-distill-llama-70b', 
+                                 'qwen/qwen3-32b', 
+                                 'moonshotai/kimi-k2-instruct'])
     conversation_memory_len=st.sidebar.slider('Conversational memory length: ', 
                                                1, 15, value=5)
     
@@ -140,12 +144,12 @@ def left_container():
         st.session_state.text_input=''
 
     # Display chat history
-    profile_path='imgs/user_profile.png' if 7 <= current_hour < 20 else 'imgs/user_dark_profile.png'
+    profile_path='public/images/user_profile.png' if 7 <= current_hour < 20 else 'public/images/user_dark_profile.png'
     for message in st.session_state.chat_history:
         with st.chat_message('human', avatar=profile_path): # //
             st.write(message['human'])
             # st.markdown(f"<p class='chat-timestamp'>{message['timestamp']}</p>", unsafe_allow_html=True)
-        with st.chat_message('assistant', avatar='imgs/lunaspace_dark_mini_logo.png'):
+        with st.chat_message('assistant', avatar='public/images/lunaspace_dark_mini_logo.png'):
             st.write(message['ai']) # st.write(f'Luna: {message['ai']}')
             # st.markdown(f"<p class='chat-timestamp'>{message['timestamp']}</p>", unsafe_allow_html=True)
     return model, conversation_memory_len
@@ -341,9 +345,9 @@ def main():
                     #     st.write(f'{data.page['output']}')
 
                 # Display latest response
-                logo_path = 'imgs/lunaspace_dark_mini_logo.png' if 7 <= current_hour < 20 else 'imgs/lunaspace_mini_logo.png'
+                logo_path = 'public/images/lunaspace_dark_mini_logo.png' if 7 <= current_hour < 20 else 'public/images/lunaspace_mini_logo.png'
                 with st.chat_message('assistant', avatar=logo_path):
-                    st.write(f'{response['output']}') # st.image('imgs/lunaspace_dark_mini_logo.png', width=50)
+                    st.write(f'{response['output']}') # st.image('public/images/lunaspace_dark_mini_logo.png', width=50)
                     # st.markdown(f"<p class='chat-timestamp'>{timestamp}</p>", unsafe_allow_html=True) # Display timestamp
             except Exception as e:
                 st.error(f'Error occurred: {str(e)}')
