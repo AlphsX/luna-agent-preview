@@ -28,27 +28,38 @@ import json
 from langchain.callbacks.base import BaseCallbackHandler
 
 class JsonCallbackHandler(BaseCallbackHandler):
-    """Custom handler to save agent responses as a single JSON array."""
-    def __init__(self, filename="logs.json"):
+    # Callback handler that logs the output to a JSON file.
+    def __init__(self, filename="logs.json", model_name=None):
         self.filename=filename
-        self.data=[]
+        self.model_name=model_name or "unknown_model"
+        self.messages=[]
 
+    def on_llm_start(self, serialized, prompts, **kwargs):
+        for prompt in prompts:
+            self.messages.append({"role": "user", "content": prompt}) # self.data.append(self._serialize_response(response)) / self.data.append(response)
+    
     def on_llm_end(self, response, **kwargs):
-        self.data.append(self._serialize_response(response)) # self.data.append(response)
+        try:
+            content=getattr(response, "output_text", None) or str(response)
+            self.messages.append({"role": "assistant", "content": content})
+        except Exception:
+            self.messages.append({"role": "assistant", "content": str(response)})
 
     def on_agent_end(self, response, **kwargs):
-        self.data.append(self._serialize_response(response)) # self.data.append(response)
-
-    def _serialize_response(self, response):
-        if hasattr(response, "to_dict"):
-            return response.to_dict()
         try:
-            return str(response) # convert to string
+            content=getattr(response, "output_text", None) or str(response)
+            self.messages.append({"role": "assistant", "content": content})
         except Exception:
-            return {"raw": "Not serialize response"}
+            self.messages.append({"role": "assistant", "content": str(response)})
+        # self.data.append(self._serialize_response(response)) # self.data.append(response)
+
     def save(self):
+        data={
+            "model": self.model_name,
+            "messages": self.messages
+        }
         with open(self.filename, "w", encoding="utf-8") as f:
-            json.dump(self.data, f, ensure_ascii=False, indent=2)
+            json.dump(data, f, ensure_ascii=False, indent=2)
 
 def right_container():
     global current_hour
@@ -273,7 +284,7 @@ def main():
         #     callbacks.append(file_handler)
         json_handler=None
         if enable_json_logs:
-            json_handler=JsonCallbackHandler("logs.json")
+            json_handler=JsonCallbackHandler("logs.json", model_name=model) # JsonCallbackHandler("logs.json")
             callbacks.append(json_handler)
 
         agent_executor=AgentExecutor(
@@ -310,7 +321,7 @@ def main():
             status.write("• Invoking...") # agent
             start=time.perf_counter()
             try:
-                callbacks_for_invoke = [st_cb] if st_cb else []
+                callbacks_for_invoke=[st_cb] if st_cb else []
                 if json_handler:
                     callbacks_for_invoke.append(json_handler)
 
