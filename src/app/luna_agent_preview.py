@@ -24,6 +24,31 @@ from langchain.agents import create_tool_calling_agent, AgentExecutor
 
 # vector search / docker ps
 from src.app.vector_db import query_postgresql
+import json
+from langchain.callbacks.base import BaseCallbackHandler
+
+class JsonCallbackHandler(BaseCallbackHandler):
+    """Custom handler to save agent responses as a single JSON array."""
+    def __init__(self, filename="logs.json"):
+        self.filename=filename
+        self.data=[]
+
+    def on_llm_end(self, response, **kwargs):
+        self.data.append(self._serialize_response(response)) # self.data.append(response)
+
+    def on_agent_end(self, response, **kwargs):
+        self.data.append(self._serialize_response(response)) # self.data.append(response)
+
+    def _serialize_response(self, response):
+        if hasattr(response, "to_dict"):
+            return response.to_dict()
+        try:
+            return str(response) # convert to string
+        except Exception:
+            return {"raw": "Not serialize response"}
+    def save(self):
+        with open(self.filename, "w", encoding="utf-8") as f:
+            json.dump(self.data, f, ensure_ascii=False, indent=2)
 
 def right_container():
     global current_hour
@@ -62,7 +87,8 @@ def left_container(api_key):
                                                1, 10, value=5)
     
     enable_streamlit_trace=st.sidebar.checkbox("Show live trace in UI (Streamlit)", value=True)
-    enable_jsonl_logs=st.sidebar.checkbox("Write JSONL logs (logs.jsonl)", value=False)
+    # enable_jsonl_logs=st.sidebar.checkbox("Write JSONL logs (logs.jsonl)", value=False)
+    enable_json_logs=st.sidebar.checkbox("Write JSON logs (logs.json)", value=False)
 
     # --- LangSmith toggle ---
     enable_langsmith=st.sidebar.checkbox("Enable LangSmith Tracing", value=False)
@@ -97,7 +123,8 @@ def left_container(api_key):
         with st.chat_message('assistant', avatar='public/images/lunaspace_dark_mini_logo.png'):
             st.write(message['ai']) # st.write(f'Luna: {message['ai']}')
             # st.markdown(f"<p class='chat-timestamp'>{message['timestamp']}</p>", unsafe_allow_html=True)
-    return model, conversation_memory_len, enable_streamlit_trace, enable_jsonl_logs
+
+    return model, conversation_memory_len, enable_streamlit_trace, enable_json_logs # enable_jsonl_logs
 
 def vector_search(q: str) -> str:
     # query_postgresql -> [(content, score), ...]
@@ -132,7 +159,7 @@ def main():
         return
     
     right_container() # R
-    model, conversation_memory_len, enable_streamlit_trace, enable_jsonl_logs=left_container(langchain_api_key) # L
+    model, conversation_memory_len, enable_streamlit_trace, enable_json_logs=left_container(langchain_api_key) # L / enable_jsonl_logs
 
     # Groq LLM
     llm=ChatGroq(groq_api_key=groq_api_key, 
@@ -145,7 +172,7 @@ def main():
 
     # Tools
     search=SerpAPIWrapper()
-    search_tool = Tool(
+    search_tool=Tool(
         name='Search',
         func=search.run,
         description='''Use this to fetch real-time data for queries about current events, market 
@@ -240,10 +267,14 @@ def main():
         callbacks=[]
         if StdOutCallbackHandler is not None:
             callbacks.append(StdOutCallbackHandler()) # terminal logs
-        file_handler=None
-        if enable_jsonl_logs and FileCallbackHandler is not None:
-            file_handler=FileCallbackHandler("logs.jsonl")
-            callbacks.append(file_handler)
+        # file_handler=None
+        # if enable_jsonl_logs and FileCallbackHandler is not None:
+        #     file_handler=FileCallbackHandler("logs.jsonl")
+        #     callbacks.append(file_handler)
+        json_handler=None
+        if enable_json_logs:
+            json_handler=JsonCallbackHandler("logs.json")
+            callbacks.append(json_handler)
 
         agent_executor=AgentExecutor(
             agent=agent,
@@ -279,11 +310,15 @@ def main():
             status.write("• Invoking...") # agent
             start=time.perf_counter()
             try:
-                response=runnable_with_history.invoke( # //
+                callbacks_for_invoke = [st_cb] if st_cb else []
+                if json_handler:
+                    callbacks_for_invoke.append(json_handler)
+
+                response=runnable_with_history.invoke( # Invoking the agent
                     {"input": input_variable},
                     config={
                         "configurable": {"session_id": "luna_session"},
-                        "callbacks": ([st_cb] if st_cb else []),
+                        "callbacks": callbacks_for_invoke, # ([st_cb] if st_cb else []),
                         "tags": ["luna", "preview"],
                         "metadata": {"user": "𝕏"},
                     },
@@ -292,6 +327,9 @@ def main():
                 status.update(label="⌘ Error", state="error")
                 st.error(f"Error occurred: {e}")
                 return
+            # Save logs.json
+            if json_handler:
+                json_handler.save()
             
             elapsed=(time.perf_counter() - start) * 1000 # ms
             status.write(f"• Done in {elapsed:.1f} ms")
