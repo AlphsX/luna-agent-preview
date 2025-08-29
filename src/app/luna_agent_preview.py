@@ -64,6 +64,7 @@ class JsonCallbackHandler(BaseCallbackHandler):
 def right_container():
     global current_hour
     current_hour=datetime.datetime.now().hour # Determine logo based on time
+    
     # Light logo from 07:00 to 19:59 | Dark logo from 20:00 to 06:59
     logo_path='public/images/lunaspace_logo.png' if 7 <= current_hour < 20 else 'public/images/lunaspace_dark_logo.png'
     font_color='#000000' if 7 <= current_hour < 20 else '#ffffff'
@@ -81,9 +82,11 @@ def right_container():
     st.markdown(f"<p style='text-align: center; color: {font_color};'>How can I help you today?</p>", unsafe_allow_html=True) #6B7280
 
 def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
-    if session_id not in store:
-        store[session_id]=InMemoryChatMessageHistory()
-    return store[session_id]
+    if "store" not in st.session_state:
+        st.session_state.store = {}
+    if session_id not in st.session_state.store:
+        st.session_state.store[session_id] = InMemoryChatMessageHistory()
+    return st.session_state.store[session_id]
 
 def left_container(api_key):
     # Sidebar LLMs
@@ -115,9 +118,10 @@ def left_container(api_key):
 
     # Clear chat history
     if st.sidebar.button('𝕏', help='Delete Chat History'):
-        st.session_state.chat_history=[]
-        store.clear()  # Clear in-memory chat history
-        st.session_state.text_input=''
+        st.session_state.chat_history = []
+        if "store" in st.session_state:
+            st.session_state.store.clear()
+        st.session_state.text_input = ''
     
     # Session state for chat history & message store
     if 'chat_history' not in st.session_state:
@@ -343,8 +347,8 @@ def main():
                 json_handler.save()
             
             elapsed=(time.perf_counter() - start) * 1000 # ms
-            status.write(f"• Done in {elapsed:.1f} ms")
-            status.update(label=f"**Thought for** {elapsed/1000:.1f} s • Expand for details", state="complete") # ✔ Completed
+            status.write(f"• Done in {elapsed:.1f}ms")
+            status.update(label=f"**Thought for** {elapsed/1000:.1f}s • Expand for details", state="complete") # ✔ Completed
 
             # Save chat history
             timestamp=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -406,7 +410,7 @@ st.markdown(
         </style>
     """, unsafe_allow_html=True,
     )
-store: dict[str, InMemoryChatMessageHistory]={} # In-memory message store for chat histories
+# store: dict[str, InMemoryChatMessageHistory]={} # In-memory message store for chat histories
 messages=[
     [
         "What do you want to know?",
