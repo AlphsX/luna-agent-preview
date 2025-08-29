@@ -1,16 +1,24 @@
-# Use a lightweight base image
-FROM alpine:latest
+# Use Python 3.11 slim image for better Python support
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install necessary tools
-RUN apk add --no-cache \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
     bash \
     curl \
     git \
     vim \
-    tree
+    tree \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt* ./
+
+# Install Python dependencies if requirements.txt exists
+RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
 
 # Copy all files from current directory to container
 COPY . .
@@ -23,7 +31,7 @@ RUN echo '#!/bin/bash' > /usr/local/bin/read-all-paths.sh && \
     echo 'find /app -type f -exec echo "=== {} ===" \; -exec cat {} \; -exec echo "" \;' >> /usr/local/bin/read-all-paths.sh && \
     chmod +x /usr/local/bin/read-all-paths.sh
 
-# Expose port (if needed)
+# Expose port for Python applications
 EXPOSE 8080
 
 # Default command to read all paths

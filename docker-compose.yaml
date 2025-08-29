@@ -14,9 +14,16 @@ services:
     environment:
       - PYTHONPATH=/app
       - ENV=development
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://luna:luna_password@postgres:5432/luna_agent
     working_dir: /app
     command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     networks:
       - luna-network
 
@@ -30,6 +37,12 @@ services:
     restart: unless-stopped
     networks:
       - luna-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   postgres:
     image: postgres:15-alpine
@@ -38,6 +51,7 @@ services:
       - POSTGRES_DB=luna_agent
       - POSTGRES_USER=luna
       - POSTGRES_PASSWORD=luna_password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
     ports:
       - "5432:5432"
     volumes:
@@ -45,6 +59,12 @@ services:
     restart: unless-stopped
     networks:
       - luna-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luna -d luna_agent"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   redis_data:
