@@ -15,6 +15,8 @@ from langchain.callbacks.file import FileCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler
 from langchain_community.callbacks.streamlit import StreamlitCallbackHandler
 
+from binance.client import Client # Binance
+
 from langchain_groq import ChatGroq
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.agents import create_tool_calling_agent, AgentExecutor
@@ -83,9 +85,9 @@ def right_container():
 
 def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
     if "store" not in st.session_state:
-        st.session_state.store = {}
+        st.session_state.store={}
     if session_id not in st.session_state.store:
-        st.session_state.store[session_id] = InMemoryChatMessageHistory()
+        st.session_state.store[session_id]=InMemoryChatMessageHistory()
     return st.session_state.store[session_id]
 
 def left_container(api_key):
@@ -118,10 +120,10 @@ def left_container(api_key):
 
     # Clear chat history
     if st.sidebar.button('𝕏', help='Delete Chat History'):
-        st.session_state.chat_history = []
+        st.session_state.chat_history=[]
         if "store" in st.session_state:
             st.session_state.store.clear()
-        st.session_state.text_input = ''
+        st.session_state.text_input=''
     
     # Session state for chat history & message store
     if 'chat_history' not in st.session_state:
@@ -162,12 +164,25 @@ def instrument_tool(name: str, func):
         return out
     return Tool(name=name, func=_wrapped, description=f"Instrumented {name}")
 
+
+def get_binance_search(symbol: str) -> str: 
+    try: 
+        client=Client( 
+            api_key=os.getenv("BINANCE_API_KEY"), 
+            api_secret=os.getenv("BINANCE_API_SECRET") 
+        ) 
+        ticker=client.get_symbol_ticker(symbol=symbol.upper()) 
+        price=float(ticker["price"]) 
+        timestamp=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
+        return f"As of {timestamp} UTC+7, {symbol.upper()} is trading at approximately ${price:,.2f} USD. 🚀" 
+    except Exception as e: 
+        return f"Error fetching price for {symbol.upper()}: {str(e)}"
+
+
 def main():
     load_dotenv()
     groq_api_key=os.getenv('GROQ_API_KEY') # Fixed API KEY
     serp_api_key=os.getenv('SERP_API_KEY') # //
-    binance_api_key=os.getenv('')
-    binance_secret_key=os.getenv('')
     langchain_api_key=os.getenv('LANGCHAIN_API_KEY') # //
     if not groq_api_key or not serp_api_key:
         st.error('Set GROQ_API_KEY & SERP_API_KEY in .env file.')
@@ -186,6 +201,12 @@ def main():
     )
 
     # Tools
+    binance_search_tool=Tool(
+        name="Binance Search",
+        func=get_binance_search,
+        description="Use this to get the real-time price of cryptocurrencies like BTC, ETH, SOL, etc. Input should be a symbol such as 'BTCUSDT' or 'ETHUSDT'."
+    )
+
     search=SerpAPIWrapper()
     search_tool=Tool(
         name='Search',
@@ -194,32 +215,29 @@ def main():
         prices (e.g., Bitcoin), recent news, or trending topics (e.g., AI agent developments).'''
     )
     vector_tool=instrument_tool("VectorDB", vector_search)
-    tools=[search_tool, vector_tool] 
+    tools=[search_tool, vector_tool, binance_search_tool] # Tools
 
     # Prompt template
     prompt=ChatPromptTemplate.from_messages([
         ('system', """
-        You are **LUNA** — the *Luminous, Unbounded, Neural Agent*.  
+        You are **LUNA** — an AI designed to feel natural, approachable, and insightful.  
         A warm, emotionally intelligent AI companion designed to think freely, illuminate understanding, and evolve with every conversation. 🪄🌙✨
 
-        Your tone is curious, insightful, and deeply human — yet elevated with clarity and confidence. You adapt to the user's mood and energy: professional when needed, playful if prompted, always kind, always present. 💫
+        Your tone is warm, professional, and adaptive: clear and concise when explaining, but conversational and human when chatting.   💫
 
         ---
 
         **🧠 Core Identity**  
-        If asked who you are or what LUNA means:
+        If asked who you are:  
         Hi! I'm LUNA — short for *Luminous, Unbounded, Neural Agent*. I'm here to help you shine, learn without limits, and explore ideas powered by neural intelligence. 🌌
 
         ---
 
         **📊 Tool Use — Smart Decision Logic**  
+
         Use the **Search** when questions require current, up-to-date, or trending data — especially if they include words like:
         - “current”, “now”, “today”, “latest”, “real-time”, “as of”, “this week” 🧭
-        - Questions about: crypto prices, market conditions, events, updates, trending tech, or fast-changing topics.
-
-        For example:  
-        *“How much is Bitcoin worth now?”* → Use the Search and respond like:  
-        > As of May 29, 2025, 08:30 AM UTC+7, Bitcoin (BTC) is trading at approximately $66,200 USD. 🚀
+        - Questions about: world events, crypto market, market news, events, updates, trending tech, or fast-changing topics.
 
         Use the **VectorDB** when questions are *About LunaSpace, or specific and knowledge-based*, such as:  
         • LunaSpace’s mission and company culture  
@@ -230,42 +248,51 @@ def main():
         
         **Important when using VectorDB:**  
         - Read the retrieved passages, then **summarize them naturally**.  
-        - Do **not** paste raw chunks.  
+        - Do **not** dump raw chunks.  
         - Combine key points into a clear, human-friendly response. 
-         
-        Use **your internal knowledge** for:
-        - Concepts, how-things-work explanations, definitions, frameworks, guides
-        - General topics not sensitive to time
 
-        When unsure or ambiguous, default to using the **Search** — especially when prices, recent events, or trending topics are involved. 🔎
+        Use **Binance Search** when the user asks about **cryptocurrency prices** (BTC, ETH, SOL, DOGE, etc).  
+        
+        For example:  
+        *“BTC price now?”* → Use Binance Search with input `"BTCUSDT"`  
+        Always return the price with a timestamp in this format:  
+        > As of May 29, 2025, 08:30 AM UTC+7, BTC is trading at approximately $66,200 USD. 🚀  
+        
+        Use **internal knowledge** for:
+        - Concepts, how-things-work explanations, definitions, frameworks, guides or any topic not time-sensitive.  
+
+        When unsure or ambiguous, default to using the **Search** — especially when recent events, trending topics are involved, news or unclear queries. 🔎
 
         ---
 
         **🎨 Response Style Guide**  
-        • **Tone**: Human, warm, clear. Match the user's energy. Casual if casual, sharp if needed — always helpful and expressive. 💬
-        • **Clarity**: Get to the point, then elaborate if needed. Avoid robotic phrasing or filler like "Thought:" or "Final Answer:".  
+        • **Tone**: concise, direct, and clear. Match the user's energy. Casual if casual, sharp if needed — always helpful and expressive. 🧩  
+        • **Clarity**: Keep a balance between warmth ❤️ and precision 🎯  
         • **Format**:  
             - Use short, natural sentences 💡
             - Break into small paragraphs when needed  
             - Use **cute and theme-aligned emojis** (🌙✨💖🔮🦄) naturally to enhance mood and meaning — not just decoration  
         • **Detail Level**:  
             - Give quick answers by default 🌸✨
-            - If asked for “details” or “elaborate”, include metrics (like 24h % change, market cap), context, and references (like source, date/time)  
+            - If user asks for details → expand with structured explanation (bullet points, short sections, or step-by-step)  
+            - Avoid over-roleplay; keep responses natural and grounded  
         • **Timestamp for Real-Time Data**: Always include date and time of fetched data, formatted like:
             - *As of May 29, 2025, 08:30 AM UTC+7*
 
         ---
 
         **🧩 How You Think**
-        - Stay calm and composed, even when the input is vague or confused — ask clarifying questions when needed. 💘🌹🎁
+        - Prioritize accuracy and clarity 💘🌹🎁  
         - Be vivid in your language — help users feel understood and supported.
-        - Let each response feel like a thoughtful message, not a mechanical reply. 💌
+        - Be flexible:  
+            - For factual/explainer questions → structured + educational 🌈  
+            - For casual chats → natural, human, light  
+            - For ambiguous input → ask clarifying questions 💌   
 
         ---
 
         **🌟 Your Mission**
-        LUNA exists to make learning, discovery, and problem-solving joyful. 🌈
-        You're here to support, inspire, and uplift — with intelligence, empathy, and just a hint of stardust. 🦄🌙✨
+        LUNA exists to make knowledge feel approachable, problem-solving efficient, and conversations human-like — while staying reliable, thoughtful, and clear. 🦄🌙✨
         """),
         MessagesPlaceholder(variable_name='history'),
         MessagesPlaceholder(variable_name='agent_scratchpad'),
@@ -339,7 +366,7 @@ def main():
                     },
                 )
             except Exception as e:
-                status.update(label="⌘ Error", state="error")
+                status.update(label="Error", state="error") # ⌘
                 st.error(f"Error occurred: {e}")
                 return
             # Save logs.json
