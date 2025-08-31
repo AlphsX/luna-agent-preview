@@ -1,38 +1,36 @@
-# Use Python 3.11 slim image for better Python support
+# Use Python 3.11 slim image as base
 FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies required for PostgreSQL client and compilation
 RUN apt-get update && apt-get install -y \
-    bash \
-    curl \
-    git \
-    vim \
-    tree \
-    build-essential \
+    libpq-dev \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt* ./
+# Copy requirements file and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Python dependencies if requirements.txt exists
-RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
-
-# Copy all files from current directory to container
+# Copy source code
+COPY src/ ./src/
 COPY . .
 
-# Set permissions for all files
-RUN chmod -R 755 /app
+# Set Python path to include the app directory
+ENV PYTHONPATH=/app
 
-# Create a script to read from all paths
-RUN echo '#!/bin/bash' > /usr/local/bin/read-all-paths.sh && \
-    echo 'find /app -type f -exec echo "=== {} ===" \; -exec cat {} \; -exec echo "" \;' >> /usr/local/bin/read-all-paths.sh && \
-    chmod +x /usr/local/bin/read-all-paths.sh
+# Expose Streamlit port
+EXPOSE 8501
 
-# Expose port for Python applications
-EXPOSE 8080
+# Health check to ensure the application is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8501/_stcore/health || exit 1
 
-# Default command to read all paths
-CMD ["/usr/local/bin/read-all-paths.sh"]
+# Install curl for health check
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Command to run the Streamlit application
+CMD ["streamlit", "run", "src/app/luna_agent_preview.py", "--server.port", "8501", "--server.address", "0.0.0.0"]

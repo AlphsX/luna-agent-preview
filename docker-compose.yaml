@@ -2,74 +2,62 @@ version: '3.8'
 
 services:
   luna-agent:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: luna-agent-preview
+    build: .
+    container_name: luna-agent-app
     ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
-      - /var/run/docker.sock:/var/run/docker.sock
+      - "8501:8501"
     environment:
-      - PYTHONPATH=/app
-      - ENV=development
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://luna:luna_password@postgres:5432/luna_agent
-    working_dir: /app
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    restart: unless-stopped
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - SERP_API_KEY=${SERP_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=pgql
+      - POSTGRES_USER=executive
+      - POSTGRES_PASSWORD=LunaSp@ceX
     depends_on:
-      redis:
-        condition: service_healthy
       postgres:
         condition: service_healthy
     networks:
       - luna-network
-
-  redis:
-    image: redis:7-alpine
-    container_name: luna-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
     restart: unless-stopped
-    networks:
-      - luna-network
+    volumes:
+      - ./src:/app/src
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg16
     container_name: luna-postgres
     environment:
-      - POSTGRES_DB=luna_agent
-      - POSTGRES_USER=luna
-      - POSTGRES_PASSWORD=luna_password
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      - POSTGRES_DB=pgql
+      - POSTGRES_USER=executive
+      - POSTGRES_PASSWORD=LunaSp@ceX
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - luna-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U luna -d luna_agent"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-volumes:
-  redis_data:
-  postgres_data:
+      test: ["CMD-SHELL", "pg_isready -U executive -d pgql"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 networks:
   luna-network:
     driver: bridge
+    name: luna-network
+
+volumes:
+  postgres_data:
+    driver: local
+    name: luna_postgres_data
