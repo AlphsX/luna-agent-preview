@@ -182,6 +182,7 @@ def get_binance_search(symbol: str) -> str:
 def main():
     load_dotenv()
     groq_api_key=os.getenv('GROQ_API_KEY') # Fixed API KEY
+    brave_api_key=os.getenv('BRAVE_API_KEY')
     serp_api_key=os.getenv('SERP_API_KEY') # //
     langchain_api_key=os.getenv('LANGCHAIN_API_KEY') # //
     if not groq_api_key or not serp_api_key:
