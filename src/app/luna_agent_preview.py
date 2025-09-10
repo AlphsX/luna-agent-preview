@@ -98,7 +98,7 @@ def left_container(api_key):
                                  'meta-llama/llama-4-maverick-17b-128e-instruct', 
                                  'deepseek-r1-distill-llama-70b', 
                                  'qwen/qwen3-32b', 
-                                 'moonshotai/kimi-k2-instruct'])
+                                 'moonshotai/kimi-k2-instruct-0905'])
     conversation_memory_len=st.sidebar.slider('Conversational memory length: ', 
                                                1, 10, value=5)
     
