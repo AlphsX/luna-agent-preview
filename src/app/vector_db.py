@@ -4,24 +4,12 @@ import psycopg2, json
 def connect_to_db():
         conn = psycopg2.connect(
             dbname="pgql",
-            user="executive", # admin
-            password="LunaSp@ceX",
+            user="{username}", # admin
+            password="{password}",
             host="localhost",
             port="5432"
         )
         cur=conn.cursor()
-        # cur.execute('''
-        #     create table if not exists documents (
-        #         id serial primary key auto_increment,
-        #         content text,
-        #         embedding vector(1024)
-        #     );
-        # ''')
-        # create extension vector;
-        # select * from pg_catalog.pg_extension where extname='vector';
-        # conn.commit()
-        # cur.close()
-        # conn.close()
         return conn, cur
 
 def embedding_model():

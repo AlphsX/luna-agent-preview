@@ -21,9 +21,6 @@ from langchain_groq import ChatGroq
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 
-# export PYTHONPATH="$(pwd)"
-# streamlit run src/app/luna_agent_preview.py --server.port 8502
-
 # vector search / docker ps
 from src.app.vector_db import query_postgresql
 import json
@@ -76,9 +73,6 @@ def right_container():
     with column:
         st.image(logo_path, output_format="auto")
 
-    # Title & Sub
-    # st.title('Hello~, 𝕏.')
-    # st.write('How can I help you today?')
     random_greetings=random.choice(messages[1])  # Random greeting
     st.markdown(f"<h1 style='text-align: center; color: {font_color};'>{random_greetings}~, 𝕏.</h1>", unsafe_allow_html=True) #1F2937
     st.markdown(f"<p style='text-align: center; color: {font_color};'>How can I help you today?</p>", unsafe_allow_html=True) #6B7280

@@ -1,4 +1,4 @@
-# Luna Agent Preview
+# LunaSpaceX Agent Preview
 
 A powerful AI agent system that integrates Large Language Models (LLMs) with vector databases and external APIs to provide intelligent, context-aware conversational experiences. Built with LangChain, Streamlit, and PostgreSQL with pgvector extension.
 
@@ -253,7 +253,7 @@ GROQ_API_KEY=your_groq_key_here
 
 # Initialize in agent
 from langchain_groq import ChatGroq
-llm = ChatGroq(model_name="mixtral-8x7b-32768")
+llm = ChatGroq(model_name="openai/gpt-oss-120b")
 ```
 
 ### Binance (Financial Data)
@@ -537,4 +537,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ by the Luna Agent team**
+**Built with ❤️ by LunaSpaceX**
